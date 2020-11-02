@@ -37,9 +37,13 @@ public final class Airtable {
     /// - Parameters:
     ///   - tableName: Name of the table to list records from.
     ///   - fields: Names of the fields that should be included in the response.
-    public func list(tableName: String, fields: [String] = []) -> AnyPublisher<[Record], AirtableError> {
+    public func list(tableName: String, filterByFormula: String? = nil, fields: [String] = []) -> AnyPublisher<[Record], AirtableError> {
+
+        let filter = filterByFormula.flatMap { (formular: String) in
+            return [URLQueryItem(name: "filterByFormula", value: formular)]
+        }
         let queryItems = fields.isEmpty ? nil : fields.map { URLQueryItem(name: "fields[]", value: $0) }
-        let request = buildRequest(method: "GET", path: tableName, queryItems: queryItems)
+        let request = buildRequest(method: "GET", path: tableName, queryItems: filter + queryItems)
         
         return performRequest(request, decoder: responseDecoder.decodeRecords(data:))
     }
@@ -220,3 +224,21 @@ extension Airtable {
     }
 }
 
+
+func +<T>(lhs: Array<T>?, rhs: Array<T>?) -> Array<T>? {
+    switch (lhs, rhs) {
+
+    case (nil, nil):
+        return nil
+
+    case (nil, _):
+        return rhs
+
+    case (_, nil):
+        return lhs
+
+    default:
+        return lhs! + rhs!
+
+    }
+}
